@@ -1,6 +1,5 @@
 var app = angular.module('todo', ['ngResource']);
 
-
 app.constant('apiKey', '4fc27c99e4b0401bdbfd1741');
 
 app.factory('Item', function($resource, apiKey) {
@@ -53,3 +52,23 @@ app.controller('AppCtrl', function($scope, Item) {
     });
   };
 });
+
+
+/*
+
+app.config(function($routeProvider) {
+  $routeProvider.
+      when('/', {controller: 'AppCtrl', template: 'todo.html'}).
+      when('/hello', {template: 'hello.html'}).
+      otherwise({redirectTo: '/'});
+});
+
+
+
+ <nav>
+ [<a href="#/">Todo</a>] [<a href="#/hello">hello</a>]
+ </nav>
+
+ <ng-view></ng-view>
+
+*/
