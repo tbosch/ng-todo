@@ -1,6 +1,6 @@
 beforeEach(module('todo'));
 
-var API_URL = 'https://api.mongolab.com/api/1/databases/ng-todo/collections/items?apiKey=4fc27c99e4b0401bdbfd1741';
+var API_URL = 'http://api.mongolab.com/api/1/databases/ng-todo/collections/items?apiKey=4fc27c99e4b0401bdbfd1741';
 
 var RESPONSE = [
   { "_id" : { "$oid" : "4fc31f64e4b0769539c32f7e"} , "text" : "Try AngularJS"},

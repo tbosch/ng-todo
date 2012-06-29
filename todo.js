@@ -4,7 +4,7 @@ var app = angular.module('todo', ['ngResource']);
 app.constant('apiKey', '4fc27c99e4b0401bdbfd1741');
 
 app.factory('Item', function($resource, apiKey) {
-  var Item = $resource('https://api.mongolab.com/api/1/databases/ng-todo/collections/items/:id', {
+  var Item = $resource('http://api.mongolab.com/api/1/databases/ng-todo/collections/items/:id', {
     apiKey: apiKey
   }, {
     update: {method: 'PUT'}
@@ -26,7 +26,7 @@ app.factory('Item', function($resource, apiKey) {
 
 app.controller('App', function($scope, Item) {
 
-  $scope.items = Item.query();
+  var items = $scope.items = Item.query();
 
   $scope.add = function() {
     var item = new Item({text: $scope.newText});
