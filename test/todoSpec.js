@@ -1,6 +1,6 @@
 beforeEach(module('todo'));
 
-describe('App', function() {
+describe('AppCtrl', function() {
   var scope;
 
   beforeEach(module('mocks.Item'));
@@ -10,7 +10,7 @@ describe('App', function() {
     scope = $rootScope.$new();
 
     // instantiate the controller
-    $controller('App', {$scope: scope});
+    $controller('AppCtrl', {$scope: scope});
   }));
 
   describe('add', function() {
