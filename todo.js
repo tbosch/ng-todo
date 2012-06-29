@@ -1,9 +1,87 @@
-var app = angular.module('todo', ['ngResource']);
+var todoApp = angular.module('todoApp', ['ngResource']);
 
-app.constant('apiKey', '4fc27c99e4b0401bdbfd1741');
+todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
-app.factory('Item', function($resource, apiKey) {
-  var Item = $resource('http://api.mongolab.com/api/1/databases/ng-todo/collections/items/:id', {
+  $scope.userName = 'Igor';
+
+  // define model
+  var items = [
+    {text: 'task 1+', done: false},
+    {text: 'task 2+', done: true}
+  ];
+
+  // publish it on scope
+  $scope.items = items;
+
+
+  // computed property
+  $scope.remaining = function() {
+    return items.reduce(function(count, item) {
+      return item.done ? count : count + 1;
+    }, 0);
+  };
+
+
+  // event handler
+  $scope.add = function(newItem) {
+    var item = {text: newItem.text, done: false};
+    items.push(item);
+    newItem.text = '';
+  };
+
+
+  // event handler
+  $scope.archive = function() {
+    items = $scope.items = items.filter(function(item) {
+      return !item.done;
+    });
+  };
+});
+
+
+/*
+
+todoApp.controller('AppCtrl', function($scope, Item) {
+
+  // fetch model
+  var items = $scope.items = Item.query();
+
+  // computed property
+  $scope.remaining = function() {
+    return items.reduce(function(count, item) {
+      return item.done ? count : count + 1;
+    }, 0);
+  };
+
+
+  // event handler
+  $scope.add = function(newItem) {
+    var item = new Item({text: newItem.text});
+    items.push(item);
+    newItem.text = '';
+
+    // save to mongolab
+    item.$save();
+  };
+
+
+  // event handler
+  $scope.archive = function() {
+    items = $scope.items = items.filter(function(item) {
+      if (item.done) {
+        item.$remove();
+        return false;
+      }
+      return true;
+    });
+  };
+});
+
+
+todoApp.constant('apiKey', '4fc27c99e4b0401bdbfd1741');
+
+todoApp.factory('Item', function($resource, apiKey) {
+  var Item = $resource('http://offline.api.mongolab.com/api/1/databases/ng-todo/collections/items/:id', {
     apiKey: apiKey
   }, {
     update: {method: 'PUT'}
@@ -22,41 +100,11 @@ app.factory('Item', function($resource, apiKey) {
   return Item;
 });
 
-
-app.controller('AppCtrl', function($scope, Item) {
-
-  $scope.items = Item.query();
-
-  $scope.add = function() {
-    var item = new Item({text: $scope.newText});
-    $scope.items.push(item);
-    $scope.newText = '';
-
-    // save to mongolab
-    item.$save();
-  };
-
-  $scope.remaining = function() {
-    return $scope.items.reduce(function(count, item) {
-      return item.done ? count : count + 1;
-    }, 0);
-  };
-
-  $scope.archive = function() {
-    $scope.items = $scope.items.filter(function(item) {
-      if (item.done) {
-        item.$remove();
-        return false;
-      }
-      return true;
-    });
-  };
-});
-
+*/
 
 /*
 
-app.config(function($routeProvider) {
+ todoApp.config(function($routeProvider) {
   $routeProvider.
       when('/', {controller: 'AppCtrl', template: 'todo.html'}).
       when('/hello', {template: 'hello.html'}).
