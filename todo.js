@@ -24,9 +24,9 @@ app.factory('Item', function($resource, apiKey) {
 });
 
 
-app.controller('App', function($scope, Item) {
+app.controller('AppCtrl', function($scope, Item) {
 
-  var items = $scope.items = Item.query();
+  $scope.items = Item.query();
 
   $scope.add = function() {
     var item = new Item({text: $scope.newText});

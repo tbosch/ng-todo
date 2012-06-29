@@ -20,7 +20,7 @@ describe('App with Mongo', function() {
     $httpBackend.expectGET(API_URL).respond(RESPONSE);
 
     // instantiate the controller
-    $controller('App', {$scope: $rootScope});
+    $controller('AppCtrl', {$scope: $rootScope});
 
     // flush pending requests
     $httpBackend.flush();
