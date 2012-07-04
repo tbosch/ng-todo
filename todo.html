@@ -1,17 +1,17 @@
-
 <h1>Things To Do</h1>
 
 <p>
   Remaining <strong>{{remaining()}}</strong> of <strong>{{items.length}}</strong>.
-  [ <a ng-click="archive()">archive</a> ]
+  [ <a href ng-click="archive()">archive</a> ]
 </p>
 
 <ul class="unstyled">
-  <li ng-repeat="item in items" class="done-{{item.done}}">
-    <input type="checkbox" ng-model="item.done" ng-change="item.$update()"> {{item.text}}</li>
+  <li ng-repeat="item in items"><input type="checkbox" ng-model="item.done" ng-change="item.$update()"> {{item.text}}</li>
 </ul>
 
-<form>
-  <input type="text" ng-model="newText">
-  <button ng-disabled="!newText" ng-click="add()" class="btn btn-primary">add</button>
+
+<form name="newItemForm">
+  <input name="newItemText" ng-model="newItem.text" ng-maxlength="15">
+  <button class="btn btn-primary" ng-click="add(newItem)" ng-disabled="!newItem.text">add</button>
+  <span ng-show="newItemForm.newItemText.$error.maxlength">Text too long!</span>
 </form>
