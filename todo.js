@@ -3,13 +3,18 @@ var todoApp = angular.module('todoApp', ['ngResource']);
 todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
   // define userName model
+  $scope.userName = 'Igor';
 
 
   // define items model
+  var items = [
+    {text: 'Make AngularJS Awesome', done: false, minion: 'Miško'},
+    {text: 'Help Brad write ToDo App', done: true, minion: 'Brad'}
+  ];
 
 
   // publish it on scope
-
+  $scope.items = items;
 
 
   // computed property
@@ -22,7 +27,11 @@ todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
   // event handler
   $scope.add = function(newItem) {
-    var item = {text: newItem.text, done: false};
+    var item = {
+      text: newItem.text,
+      minion: newItem.minion,
+      done: false
+    };
     items.push(item);
     newItem.text = '';
   };
@@ -34,4 +43,26 @@ todoApp.controller('AppCtrl', function AppCtrl($scope) {
       return !item.done;
     });
   };
+});
+
+
+
+todoApp.directive('avatar', function() {
+  return {
+    restrict: 'EA',
+    scope: {
+      userName: '='
+    },
+    template: '<div class="avatar label label-info">' +
+                '<img ng-src="{{userName | avatarUrl}}">' +
+                '<span>{{userName}}</span>' +
+              '</div>'
+  };
+});
+
+
+todoApp.filter('avatarUrl', function() {
+  return function(userName) {
+    return 'img/' + userName.toLowerCase() + '.png';
+  }
 });
