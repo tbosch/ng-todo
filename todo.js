@@ -3,13 +3,18 @@ var todoApp = angular.module('todoApp', ['ngResource']);
 todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
   // define userName model
+  $scope.userName = 'Igor';
 
 
   // define items model
+  var items = [
+    {text: 'Make AngularJS Awesome', done: false, minion: 'Miško'},
+    {text: 'Help Brad write ToDo App', done: true, minion: 'Brad'}
+  ];
 
 
   // publish it on scope
-
+  $scope.items = items;
 
 
   // computed property
@@ -22,7 +27,11 @@ todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
   // event handler
   $scope.add = function(newItem) {
-    var item = {text: newItem.text, done: false};
+    var item = {
+      text: newItem.text,
+      minion: newItem.minion,
+      done: false
+    };
     items.push(item);
     newItem.text = '';
   };
@@ -98,6 +107,7 @@ todoApp.controller('AppCtrl', function($scope, Item) {
 
 
 todoApp.constant('apiKey', '4fc27c99e4b0401bdbfd1741');
+
 
 todoApp.factory('Item', function($resource, apiKey) {
   var Item = $resource('http://offline.api.mongolab.com/api/1/databases/ng-todo/collections/items/:id', {
