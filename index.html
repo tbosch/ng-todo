@@ -21,7 +21,7 @@
 </p>
 
 <ul class="unstyled">
-  <li ng-repeat="item in items"><input type="checkbox" ng-model="item.done"> {{item.text}}</li>
+  <li ng-repeat="item in items"><input type="checkbox" ng-model="item.done" ng-change="item.$update()"> {{item.text}}</li>
 </ul>
 
 
