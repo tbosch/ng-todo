@@ -69,7 +69,8 @@ var DbStore = function() {
 
 var db = new DbStore();
 db.create({text: 'Try AngularJS', done: false});
-db.create({text: 'Visit Santa Monica', done: true});
+db.create({text: 'Visit San Diego Downtown', done: true});
+db.create({text: 'Run on Mission Beach', done: true});
 db.create({text: 'Have FUN!', done: false});
 
 var handler = {

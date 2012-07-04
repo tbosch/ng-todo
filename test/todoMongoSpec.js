@@ -1,6 +1,7 @@
 beforeEach(module('todo'));
 
-var API_URL = 'http://api.mongolab.com/api/1/databases/ng-todo/collections/items?apiKey=4fc27c99e4b0401bdbfd1741';
+var API_URL = 'http://offline.api.mongolab.com/api/1/databases/ng-todo/collections/items?apiKey=4fc27c99e4b0401bdbfd1741';
+//var API_URL = 'https://api.mongolab.com/api/1/databases/ng-todo/collections/items?apiKey=4fc27c99e4b0401bdbfd1741';
 
 var RESPONSE = [
   { "_id" : { "$oid" : "4fc31f64e4b0769539c32f7e"} , "text" : "Try AngularJS"},
@@ -30,9 +31,11 @@ describe('App with Mongo', function() {
     httpBackend = $httpBackend;
   }));
 
+
   afterEach(function() {
     httpBackend.verifyNoOutstandingExpectation();
   });
+
 
   it('should load items from mongolab', function() {
     expect(scope.items.length).toBe(3);
@@ -44,8 +47,7 @@ describe('App with Mongo', function() {
     it('should store item in mongolab', function() {
       httpBackend.expectPOST(API_URL, {text: 'FAKE TASK'}).respond();
 
-      scope.newText = 'FAKE TASK';
-      scope.add();
+      scope.add({text: 'FAKE TASK'});
     });
   });
 
