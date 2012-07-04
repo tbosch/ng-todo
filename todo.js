@@ -1,5 +1,13 @@
 var todoApp = angular.module('todoApp', ['ngResource']);
 
+todoApp.config(function($routeProvider) {
+  $routeProvider.
+      when('/', {controller: 'AppCtrl', templateUrl: 'todo.html'}).
+      when('/hello', {templateUrl: 'hello.html'}).
+      otherwise({redirectTo: '/'});
+});
+
+
 todoApp.controller('AppCtrl', function($scope, Item) {
 
   // fetch model
