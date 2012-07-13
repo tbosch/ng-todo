@@ -2,18 +2,30 @@ var todoApp = angular.module('todoApp', ['ngResource']);
 
 todoApp.config(function($routeProvider) {
   $routeProvider.
-      when('/', {controller: 'AppCtrl', templateUrl: 'todo.html'}).
+      when('/', {
+        controller: 'AppCtrl',
+        templateUrl: 'todo.html',
+        resolve: {
+          items: function($q, Item) {
+            var deferred = $q.defer();
+            Item.query(function(items) {
+              deferred.resolve(items);
+            });
+            return deferred.promise;
+          }
+        }
+      }).
       when('/hello', {templateUrl: 'hello.html'}).
       otherwise({redirectTo: '/'});
 });
 
 
-todoApp.controller('AppCtrl', function AppCtrl($scope, Item) {
+todoApp.controller('AppCtrl', function AppCtrl($scope, items, Item) {
 
   $scope.userName = 'Igor';
 
-  // fetch model
-  var items = $scope.items = Item.query();
+  // publish model
+  $scope.items = items;
 
   // computed property
   $scope.remaining = function() {

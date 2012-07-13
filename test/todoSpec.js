@@ -10,7 +10,7 @@ describe('AppCtrl', function() {
     scope = $rootScope.$new();
 
     // instantiate the controller
-    $controller('AppCtrl', {$scope: scope});
+    $controller('AppCtrl', {$scope: scope, items: []});
   }));
 
 

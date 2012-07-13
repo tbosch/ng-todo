@@ -21,10 +21,7 @@ describe('App with Mongo', function() {
     $httpBackend.expectGET(API_URL).respond(RESPONSE);
 
     // instantiate the controller
-    $controller('AppCtrl', {$scope: $rootScope});
-
-    // flush pending requests
-    $httpBackend.flush();
+    $controller('AppCtrl', {$scope: $rootScope, items: []});
 
     // store references to access them in specs
     scope = $rootScope;
