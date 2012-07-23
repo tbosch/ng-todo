@@ -23,15 +23,7 @@ todoApp.controller('AppCtrl', function AppCtrl($scope, Item) {
 
   // event handler
   $scope.add = function(newItem) {
-<<<<<<< HEAD
-    var item = {
-      text: newItem.text,
-      minion: newItem.minion,
-      done: false
-    };
-=======
     var item = new Item({text: newItem.text});
->>>>>>> a7bf91e... add persistence
     items.push(item);
     newItem.text = '';
 
