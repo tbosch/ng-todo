@@ -9,7 +9,7 @@ todoApp.controller('AppCtrl', function AppCtrl($scope) {
   // define usernames model
   var users = [
     {name: 'בראד :)'},
-    {name: 'מישקו miško'},
+    {name: 'מישקו misko'},
     {name: 'ווייטה'},
     {name: 'brad green'}
   ];
@@ -20,10 +20,10 @@ todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
   // define items model
   var items = [
-    {text: 'הפוך את AngularJS למצויינת!', done: false, minion: 'מישקו miško'},
+    {text: 'הפוך את AngularJS למצויינת!', done: false, minion: 'מישקו misko'},
     {text: 'עזור לכתוב את אפליקציית ה-Todo', done: true, minion: 'בראד :)'},
     {text: '2014 OKRs', done: true, minion: 'brad green'},
-    {text: '2001: אודיסיאה בחלל', done: false, minion: 'מישקו miško'}
+    {text: '2001: אודיסיאה בחלל', done: false, minion: 'מישקו misko'}
   ];
 
 
