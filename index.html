@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="todoApp" ng-controller="AppCtrl">
 
 <head>
   <meta charset="utf-8">
-  <title>Things To Do</title>
+  <title>Todo List for {{userName}}</title>
   <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
   <link rel="stylesheet" href="todo.css">
   <script src="libs/angular.js"></script>
@@ -11,9 +11,9 @@
   <script src="todo.js"></script>
 </head>
 
-<body class="well" ng-app="todoApp" ng-controller="AppCtrl">
+<body class="well">
 
-<h1><span avatar user-name="userName"></span> {{userName}}'s Todo List</h1>
+<h1><span avatar user-name="userName"></span> Todo List for {{userName}}</h1>
 
 <p>
   Remaining <strong>{{remaining()}}</strong> of <strong>{{items.length}}</strong>.
@@ -35,9 +35,7 @@
          ng-maxlength="15">
   <div ng-show="newItemForm.newItemText.$error.maxlength">Text too long!</div>
   <select ng-model="newItem.minion" required>
-    <option>Brad</option>
-    <option>Miško</option>
-    <option>Vojta</option>
+    <option ng-repeat="user in users">{{user.name}}</option>
   </select>
   <button class="btn btn-primary"
           ng-click="add(newItem)"

@@ -3,13 +3,27 @@ var todoApp = angular.module('todoApp', ['ngResource']);
 todoApp.controller('AppCtrl', function AppCtrl($scope) {
 
   // define userName model
-  $scope.userName = 'Igor';
+  $scope.userName = 'איגור';
+
+
+  // define usernames model
+  var users = [
+    {name: 'בראד :)'},
+    {name: 'מישקו misko'},
+    {name: 'ווייטה'},
+    {name: 'brad green'}
+  ];
+
+  // publish it on scope
+  $scope.users = users;
 
 
   // define items model
   var items = [
-    {text: 'Make AngularJS Awesome', done: false, minion: 'Miško'},
-    {text: 'Help Brad write ToDo App', done: true, minion: 'Brad'}
+    {text: 'הפוך את AngularJS למצויינת!', done: false, minion: 'מישקו misko'},
+    {text: 'עזור לכתוב את אפליקציית ה-Todo', done: true, minion: 'בראד :)'},
+    {text: '2014 OKRs', done: true, minion: 'brad green'},
+    {text: '2001: אודיסיאה בחלל', done: false, minion: 'מישקו misko'}
   ];
 
 
