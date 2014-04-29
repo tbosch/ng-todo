@@ -1,36 +1,50 @@
 <!DOCTYPE html>
-<html>
+<!-- Set the default direction to be the direction of $locale.
+     Also enable attribute escaping for content in children -->
+<html ng-app="todoApp" ng-controller="AppCtrl" ng-dir="locale">
+
 <head>
   <meta charset="utf-8">
-  <title>Things To Do</title>
+  <title>Todo List for {{userName | bidi}}</title>
   <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
-  <script type="text/javascript" src="angular.js"></script>
-  <script type="text/javascript" src="angular-resource.js"></script>
-  <script type="text/javascript" src="todo.js"></script>
-  <style type="text/css">
-    .done-true {
-      color: gray;
-      text-decoration: line-through;
-    }
-  </style>
+  <link rel="stylesheet" href="todo.css">
+  <script src="libs/angular.js"></script>
+  <script src="libs/angular-resource.js"></script>
+  <script src="todo.js"></script>
 </head>
-<body ng-app="todo" ng-controller="App" class="well">
 
-<h1>Things To Do</h1>
+<body class="well">
+
+<h1><span avatar user-name="userName"></span> Todo List for <span ng-dir="auto">{{userName}}</span></h1>
 
 <p>
   Remaining <strong>{{remaining()}}</strong> of <strong>{{items.length}}</strong>.
-  [ <a ng-click="archive()">archive</a> ]
+  [ <a href ng-click="archive()">archive</a> ]
 </p>
 
 <ul class="unstyled">
-  <li ng-repeat="item in items" class="done-{{item.done}}">
-    <input type="checkbox" ng-model="item.done" ng-change="item.$update()"> {{item.text}}</li>
+  <li ng-repeat="item in items">
+    <input type="checkbox" ng-model="item.done">
+    <span ng-dir="auto">{{item.text}}</span>
+    <avatar user-name="item.minion"></avatar>
+  </li>
 </ul>
 
-<form>
-  <input type="text" ng-model="newText">
-  <button ng-disabled="!newText" ng-click="add()" class="btn btn-primary">add</button>
+<form name="newItemForm">
+  <input name="newItemText"
+         ng-model="newItem.text"
+         required
+         ng-maxlength="15"
+         ng-dir="auto">
+  <div ng-show="newItemForm.newItemText.$error.maxlength">Text too long!</div>
+  <select ng-model="newItem.minion" required>
+    <option ng-repeat="user in users" ng-dir="auto">{{user.name}}</option>
+  </select>
+  <button class="btn btn-primary"
+          ng-click="add(newItem)"
+          ng-disabled="newItemForm.$invalid">
+    add
+  </button>
 </form>
 
 </body>
