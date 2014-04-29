@@ -69,7 +69,7 @@ todoApp.directive('avatar', function() {
     },
     template: '<div class="avatar label label-info">' +
                 '<img ng-src="{{userName | avatarUrl}}">' +
-                '<span>{{userName}}</span>' +
+                '<span ng-dir="auto">{{userName}}</span>' +
               '</div>'
   };
 });
