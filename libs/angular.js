@@ -1,5 +1,5 @@
 /**
- * @license AngularJS v1.3.0-local+sha.85854d3
+ * @license AngularJS v1.3.0-local+sha.18c9882
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -68,7 +68,7 @@ function minErr(module) {
       return match;
     });
 
-    message = message + '\nhttp://errors.angularjs.org/1.3.0-local+sha.85854d3/' +
+    message = message + '\nhttp://errors.angularjs.org/1.3.0-local+sha.18c9882/' +
       (module ? module + '/' : '') + code;
     for (i = 2; i < arguments.length; i++) {
       message = message + (i == 2 ? '?' : '&') + 'p' + (i-2) + '=' +
@@ -1932,6 +1932,7 @@ function setupModuleLoader(window) {
     $LocaleProvider,
     $CompileProvider,
 
+    dirDirective,
     htmlAnchorDirective,
     inputDirective,
     inputDirective,
@@ -1949,7 +1950,6 @@ function setupModuleLoader(window) {
     ngCspDirective,
     ngCloakDirective,
     ngControllerDirective,
-    ngDirDirective,
     ngFormDirective,
     ngHideDirective,
     ngIfDirective,
@@ -2021,7 +2021,7 @@ function setupModuleLoader(window) {
  * - `codeName` – `{string}` – Code name of the release, such as "jiggling-armfat".
  */
 var version = {
-  full: '1.3.0-local+sha.85854d3',    // all of these placeholder strings will be replaced by grunt's
+  full: '1.3.0-local+sha.18c9882',    // all of these placeholder strings will be replaced by grunt's
   major: 1,    // package task
   minor: 3,
   dot: 0,
@@ -2076,6 +2076,7 @@ function publishExternalAPI(angular){
       $provide.provider('$compile', $CompileProvider).
         directive({
             a: htmlAnchorDirective,
+            dir: dirDirective,
             input: inputDirective,
             textarea: inputDirective,
             form: formDirective,
@@ -2091,7 +2092,6 @@ function publishExternalAPI(angular){
             ngClassOdd: ngClassOddDirective,
             ngCloak: ngCloakDirective,
             ngController: ngControllerDirective,
-            ngDir: ngDirDirective,
             ngForm: ngFormDirective,
             ngHide: ngHideDirective,
             ngIf: ngIfDirective,
@@ -4389,12 +4389,18 @@ function $$AsyncCallbackProvider(){
  * @requires $locale
  *
  * @description
- * Provides a way to estimate the text direction of a string or html fragment and to apply it
- * using unicode control characters.
+ * Provides a way to estimate the text direction of a string or html fragment or a locale.
+ * Uses by {@link ng.directive:dir dir} directive to provide bidirectional text support in templates.
  *
  * The implementation uses the
- * [bidi support of the Google Closure Library](https://closure-library.googlecode.com/git/closure/goog/i18n/bidi.js).
+ * [bidi support of the Google Closure Library](https://github.com/google/closure-library/blob/master/closure/goog/i18n/bidi.js).
  *
+ * This service is needed as not all browsers support the html5 standard
+ * (see [W3C dir=auto tests](http://www.w3.org/International/tests/html5/the-dir-attribute/results-dir-auto))
+ * and the html5 standard only looks for the first character with a strong directionality to the determine the
+ * directionality of the whole element (see
+ * [HTML5 dir attribute](http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html#the-dir-attribute)),
+ * which is a bit simplistic.
  */
 function $BidiProvider() {
   var googI18nBidi = googI18nBidiFactory();
@@ -4403,9 +4409,7 @@ function $BidiProvider() {
     return {
       Dir: googI18nBidi.Dir,
       Format: googI18nBidi.Format,
-      estimateDirection: estimateDirection,
-      estimateDirectionIncremental: googI18nBidi.estimateDirectionIncremental,
-      applyDirToText: applyDirToText,
+      estimateDirection: googI18nBidi.estimateDirection,
       localeDir: localeDir
     };
 
@@ -4417,20 +4421,6 @@ function $BidiProvider() {
       }
     }
   }];
-
-  function estimateDirection(value, isHtml) {
-    return googI18nBidi.estimateDirectionIncremental().add(value, isHtml).get();
-  }
-
-  function applyDirToText(dir, value) {
-    if (dir === googI18nBidi.Dir.RTL) {
-      value = googI18nBidi.enforceRtlInText(value);
-    } else if (dir === googI18nBidi.Dir.LTR) {
-      value = googI18nBidi.enforceLtrInText(value);
-    }
-    return value;
-  }
-
 }
 
 /**
@@ -4612,29 +4602,6 @@ function googI18nBidiFactory() {
     return rtlLocalesRe_.test(lang);
   };
 
-
-  /**
-   * Enforce RTL on both end of the given text piece using unicode BiDi formatting
-   * characters RLE and PDF.
-   * @param {string} text The piece of text that need to be wrapped.
-   * @return {string} The wrapped string after process.
-   */
-   var enforceRtlInText = function(text) {
-    return Format.RLE + text + Format.PDF;
-  };
-
-
-  /**
-   * Enforce LTR on both end of the given text piece using unicode BiDi formatting
-   * characters LRE and PDF.
-   * @param {string} text The piece of text that need to be wrapped.
-   * @return {string} The wrapped string after process.
-   */
-   var enforceLtrInText = function(text) {
-    return Format.LRE + text + Format.PDF;
-  };
-
-
   /**
    * Regular expression to split a string into "words" for directionality
    * estimation based on relative word counts.
@@ -4660,9 +4627,6 @@ function googI18nBidiFactory() {
 
 
   /**
-   * Adapter version of estimateDirection from the Closure library
-   * that is able to keep track of word counts over time.
-   *
    * Estimates the directionality of a string based on relative word counts.
    * If the number of RTL words is above a certain percentage of the total number
    * of strongly directional words, returns RTL.
@@ -4682,70 +4646,37 @@ function googI18nBidiFactory() {
    * - get:
    * @return {Dir} Estimated overall directionality of {@code str}.
    */
-  var estimateDirectionIncremental = function() {
-
+  var estimateDirection = function(str, opt_isHtml) {
     var rtlCount = 0;
     var totalCount = 0;
-    var hasWeaklyLtr = 0;
-    var result;
-
-    return result = {
-      add: add,
-      remove: remove,
-      get: get
-    };
-
-    function add(str, opt_isHtml) {
-      return update(str, opt_isHtml, inc);
-    }
-
-    function remove(str, opt_isHtml) {
-      return update(str, opt_isHtml, dec);
-    }
-
-    function inc(number) {
-      return number+1;
-    }
-
-    function dec(number) {
-      return number>0 ? number-1 : 0;
-    }
-
-    function update(str, opt_isHtml, incFn) {
-      str = str || '';
-      var tokens = stripHtmlIfNeeded_(str, opt_isHtml).
+    var hasWeaklyLtr = false;
+    var tokens = stripHtmlIfNeeded_(str, opt_isHtml).
         split(wordSeparatorRe_);
-      for (var i = 0; i < tokens.length; i++) {
-        var token = tokens[i];
-        if (startsWithRtl(token)) {
-          rtlCount = incFn(rtlCount);
-          totalCount = incFn(totalCount);
-        } else if (isRequiredLtrRe_.test(token)) {
-          hasWeaklyLtr = incFn(hasWeaklyLtr);
-        } else if (hasAnyLtr(token)) {
-          totalCount = incFn(totalCount);
-        } else if (hasNumeralsRe_.test(token)) {
-          hasWeaklyLtr = true;
-        }
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (startsWithRtl(token)) {
+        rtlCount++;
+        totalCount++;
+      } else if (isRequiredLtrRe_.test(token)) {
+        hasWeaklyLtr = true;
+      } else if (hasAnyLtr(token)) {
+        totalCount++;
+      } else if (hasNumeralsRe_.test(token)) {
+        hasWeaklyLtr = true;
       }
-      return result; // for chaining
     }
 
-    function get() {
-      return totalCount === 0 ?
+    return totalCount === 0 ?
         (hasWeaklyLtr ? Dir.LTR : Dir.NEUTRAL) :
         (rtlCount / totalCount > rtlDetectionThreshold_ ?
-          Dir.RTL : Dir.LTR);
-    }
+            Dir.RTL : Dir.LTR);
   };
 
   return {
     Dir: Dir,
     Format: Format,
-    estimateDirectionIncremental: estimateDirectionIncremental,
-    isRtlLanguage: isRtlLanguage,
-    enforceRtlInText: enforceRtlInText,
-    enforceLtrInText: enforceLtrInText
+    estimateDirection: estimateDirection,
+    isRtlLanguage: isRtlLanguage
   };
 
 }
@@ -6581,7 +6512,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
           }
           break;
         case 3: /* Text Node */
-          addTextInterpolateDirective(directives, node.nodeValue);
+          addTextInterpolateDirective(directives, node);
           break;
         case 8: /* Comment */
           try {
@@ -7324,26 +7255,44 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
     }
 
 
-    function addTextInterpolateDirective(directives, text) {
+    function addTextInterpolateDirective(directives, textNode) {
+      var whitespaceRe = /^\s*$/;
+      var text = textNode.nodeValue;
       var interpolateFn = $interpolate(text, true);
       if (interpolateFn) {
+        var singleInterpolationChild = isSingleInterpolationInParent(textNode);
         directives.push({
           priority: 0,
-          require: '^?ngDir',
+          require: '^?dir',
           compile: valueFn(function textInterpolateLinkFn(scope, node, attr, dirCtrl) {
             var parent = node.parent(),
-                bindings = parent.data('$binding') || [],
-                textChanger = dirCtrl?  dirCtrl.createTextChanger(scope, text) : null;
+                bindings = parent.data('$binding') || [];
             bindings.push(interpolateFn);
             safeAddClass(parent.data('$binding', bindings), 'ng-binding');
-            scope.$watch(interpolateFn, function interpolateFnWatchAction(value) {
-              if (textChanger) {
-                textChanger(value);
-              }
-              node[0].nodeValue = value;
-            });
+            if (dirCtrl && !singleInterpolationChild) {
+              scope.$watchGroup(interpolateFn.expressions, function interpolateFnDirWatchAction(values) {
+                dirCtrl.interpolateTextNode(node[0], values, interpolateFn.separators);
+              });
+            } else {
+              scope.$watch(interpolateFn, function interpolateFnWatchAction(value) {
+                if (dirCtrl && singleInterpolationChild) {
+                  dirCtrl.updateElementDir(node[0].parentNode, value, false);
+                }
+                node[0].nodeValue = value;
+              });
+            }
           })
         });
+      }
+
+      function isSingleInterpolationInParent(textNode) {
+        return textNode.parentNode.childNodes.length === 1 &&
+          interpolateFn.expressions.length === 1 &&
+          isEmpty(interpolateFn.separators[0]) && isEmpty(interpolateFn.separators[1]);
+      }
+
+      function isEmpty(s) {
+        return (s||'').match(/^\s*$/);
       }
     }
 
@@ -7378,9 +7327,10 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
       directives.push({
         priority: 100,
+        require: '^?dir',
         compile: function() {
             return {
-              pre: function attrInterpolatePreLinkFn(scope, element, attr) {
+              pre: function attrInterpolatePreLinkFn(scope, element, attr, dirCtrl) {
                 var $$observers = (attr.$$observers || (attr.$$observers = {}));
 
                 if (EVENT_HANDLER_ATTR_REGEXP.test(name)) {
@@ -7400,23 +7350,35 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
                 // initialize attr object so that it's ready in case we need the value for isolate
                 // scope initialization, otherwise the value would not be available from isolate
                 // directive's linking fn during linking phase
+                // Note that we don't need to apply bidi handling here as values for components
+                // should not be treated with unicode directionality embedding.
                 attr[name] = interpolateFn(scope);
-
                 ($$observers[name] || ($$observers[name] = [])).$$inter = true;
-                (attr.$$observers && attr.$$observers[name].$$scope || scope).
-                  $watch(interpolateFn, function interpolateFnWatchAction(newValue, oldValue) {
-                    //special case for class attribute addition + removal
-                    //so that class changes can tap into the animation
-                    //hooks provided by the $animate service. Be sure to
-                    //skip animations when the first digest occurs (when
-                    //both the new and the old values are the same) since
-                    //the CSS classes are the non-interpolated values
-                    if(name === 'class' && newValue != oldValue) {
-                      attr.$updateClass(newValue, oldValue);
-                    } else {
-                      attr.$set(name, newValue);
-                    }
+                var watchScope = attr.$$observers && attr.$$observers[name].$$scope || scope;
+                if (dirCtrl && !dirCtrl.isDirAwareAttribute(element, name)) {
+                  var oldValue;
+                  watchScope.$watchGroup(interpolateFn.expressions, function(values) {
+                    var value = dirCtrl.interpolateWithUnicodeEmbedding(values, interpolateFn.separators);
+                    interpolateFnWatchAction(value, oldValue);
+                    oldValue = value;
                   });
+                } else {
+                  watchScope.$watch(interpolateFn, interpolateFnWatchAction);
+                }
+
+                function interpolateFnWatchAction(newValue, oldValue) {
+                  //special case for class attribute addition + removal
+                  //so that class changes can tap into the animation
+                  //hooks provided by the $animate service. Be sure to
+                  //skip animations when the first digest occurs (when
+                  //both the new and the old values are the same) since
+                  //the CSS classes are the non-interpolated values
+                  if(name === 'class' && newValue != oldValue) {
+                    attr.$updateClass(newValue, oldValue);
+                  } else {
+                    attr.$set(name, newValue);
+                  }
+                }
               }
             };
           }
@@ -15004,7 +14966,6 @@ function $FilterProvider($provide) {
     numberFilter: false,
     orderByFilter: false,
     uppercaseFilter: false,
-    bidiFilter: false
   */
 
   register('currency', currencyFilter);
@@ -15016,7 +14977,6 @@ function $FilterProvider($provide) {
   register('number', numberFilter);
   register('orderBy', orderByFilter);
   register('uppercase', uppercaseFilter);
-  register('bidi', bidiFilter);
 }
 
 /**
@@ -15752,43 +15712,6 @@ var uppercaseFilter = valueFn(uppercase);
 
 /**
  * @ngdoc filter
- * @name bidi
- * @function
- *
- * @description
- *   Escapes a string using unicode symbols as unicode embedding.
- *
- *   This should only be used when it is not possible to insert an element with a `dir` attribute
- *   at a given place in the html document
- *   (e.g. for text in attribute values or for parts of text in an `<option>` element, as it
- *   does not allow to nest other elements.
- *   See  [Unicode controls vs. markup for bidi support](http://www.w3.org/International/questions/qa-bidi-controls)
- *   on a discussion about when to use the `dir` attribute vs unicode controls).
- *   Note that this will always escape the given text, independent of the value of the `dir` attribute of the nearest
- *   parent element to simplify the implementation.
- *
- * @param {string} text A text that should be escaped
- * @returns {string} An escaped text.
- *
- * @example
- <example>
- <file name="index.html">
-   <select>
-     <option>name: {{'someName' | bidi}}</option>
-   </select>
- </file>
- </example>
- *
- */
-bidiFilter.$inject = ['$bidi'];
-function bidiFilter($bidi) {
-  return function(text) {
-    return $bidi.applyDirToText($bidi.estimateDirection(text), text);
-  };
-}
-
-/**
- * @ngdoc filter
  * @name limitTo
  * @function
  *
@@ -16473,6 +16396,259 @@ forEach(['src', 'srcset', 'href'], function(attrName) {
     };
   };
 });
+
+/**
+ * @ngdoc directive
+ * @name dir
+ * @requires $bidi
+ * @restrict A
+ *
+ * @description
+ * This directive provides bidirectional text support for AngularJS.
+ * It uses the {@link ng.service:$bidi $bidi} service to estimate the directionality
+ * of text.
+ *
+ * The bidirectionality handling is activated whenever there is a parent element with a
+ * `dir` attribute. Applications that support bidirectional texts should set
+ * the default directionality on the {@link ng.service:$rootElement $rootElement}
+ * of the angular application. This directive also supports the special value `dir="locale"`
+ * to apply the directionality of the current angular locale to the `dir` attribute.
+ *
+ * Rules for the bidirectional text handling in text interpolations:
+ * * Wrap the expression value into a separate `<span dir="...">` element to define the
+ *   directionality.
+ * * If there is some non interpolated text right after the interpolation, add a correctional
+ *   unicode embedding character to prevent spillover to the following characters
+ *   with neutral directionality. E.g. `{{name}} - 2 reviews`
+ *   would have a wrong word order without this.
+ * * Dont' wrap into a `<span>` but use the `dir` property of the container element
+ *   if the container only contains one interpolation
+ *   with one expression, e.g. `<div>{{someProperty}}</div>`.
+ * * If the directionality
+ *   of an expression value is the same as the directionality of the nearest parent
+ *   that defines a `dir` attribute, don't change the directionality.
+ * * If two expressions with the same directionality are right next to each other,
+ *   only apply the directionality for their sum, e.g. `<div>{{a}}{{b}}</div>`.
+ * * Within `<title>`, `<option>` and `<textarea>` elements, don't wrap into `<span>`s,
+ *   as those elements don't support nested elements. Instead, declare the directionality
+ *   of the expression values using unicode directional embedding control characters.
+ *
+ * Rules for bidirectional text handling in attribute interpolations:
+ * * Wrap the expression value using unicode directional embedding control characters
+ *   to declare the directionality.
+ * * If there is some non interpolated text right after the interpolation, add a correctional
+ *   unicode embedding character to prevent spillover to the following characters
+ *   with neutral directionality. E.g. `{{name}} - 2 reviews`
+ *   would have a wrong word order without this.
+ * * If the directionality
+ *   of an expression value is the same as the directionality of the nearest parent
+ *   that defines a `dir` attribute, don't change the directionality.
+ * * If two expressions with the same directionality are right next to each other,
+ *   only apply the directionality for their sum, e.g. `<div>{{a}}{{b}}</div>`.
+ *
+ * Rules for {@link ng.directive:ngBind ngBind} and {@link ng.directive:ngBindHtml ngBindHtml}:
+ * * Set the directionality via the `dir` property of the element that `ngBind` has been used
+ * * If the directionality
+ *   of an expression value is the same as the directionality of the nearest parent
+ *   that defines a `dir` attribute, don't change the directionality.
+ *
+ * Rules for {@link ngBindTemplate ngBindTemplate}: See normal text interpolation.
+ */
+var dirDirective = ['$bidi', function($bidi) {
+  var ELEMENTS_THAT_DONT_ALLOW_SPANS = {
+    'TITLE': true,
+    'OPTION': true,
+    'TEXTAREA': true
+  };
+  var ATTRIBUTES_WITH_NO_UNICODE_EMBEDDING = {
+    'ngBindTemplate': true
+  };
+
+  var DIR_EMBED = 'e';
+  var DIR_CONTAINER = 'c';
+
+  return {
+    restrict: 'A',
+    controller: ['$scope', '$element', '$attrs', DirController]
+  };
+
+  function DirController($scope, $element, attrs) {
+    var self = this;
+    var parentDirCtrl = $element.parent().inheritedData('$dirController');
+
+    this.isDirAwareAttribute = function(element, attrName) {
+      return !!ATTRIBUTES_WITH_NO_UNICODE_EMBEDDING[attrName];
+    };
+
+    this.interpolateWithUnicodeEmbedding = function(values, separators) {
+      var containerDir = self.getDir();
+      var embedDir = containerDir === $bidi.Dir.LTR ? $bidi.Dir.RTL : $bidi.Dir.LTR;
+
+      var valuesAndLayout = mergeValuesAndSeparators(containerDir, values, separators);
+      var layout = valuesAndLayout.layout;
+      var mergedValues = valuesAndLayout.values;
+      for (var i=0; i<mergedValues.length; i++) {
+        var value = mergedValues[i];
+        if (layout[i] === DIR_EMBED) {
+          value = getUnicodeEmbeddingChar(embedDir) + value + $bidi.Format.PDF;
+        }
+        mergedValues[i] = value;
+      }
+      return mergedValues.join('');
+    };
+
+    this.interpolateTextNode = function(textNode, values, separators) {
+      var i, node;
+      var range = textNode.$$bidiRange;
+      if (!range) {
+        range = textNode.$$bidiRange = document.createRange();
+        range.selectNode(textNode);
+        textNode.$$layout = DIR_CONTAINER;
+        textNode.$$nodes = [textNode];
+      }
+      if (ELEMENTS_THAT_DONT_ALLOW_SPANS[range.startContainer.nodeName]) {
+        textNode.nodeValue = this.interpolateWithUnicodeEmbedding(values, separators);
+        return;
+      }
+      var containerDir = self.getDir();
+      var embedDir = containerDir === $bidi.Dir.LTR ? $bidi.Dir.RTL : $bidi.Dir.LTR;
+
+      var valuesAndLayout = mergeValuesAndSeparators(containerDir, values, separators);
+      var layout = valuesAndLayout.layout;
+      var mergedValues = valuesAndLayout.values;
+      if (textNode.$$layout !== layout) {
+        // recreate nodes
+        textNode.$$layout = layout;
+        textNode.$$nodes = [];
+        var nodes = document.createDocumentFragment();
+        for (i=0; i<mergedValues.length; i++) {
+          node = updateNode(null, mergedValues[i], layout[i]);
+          nodes.appendChild(node);
+          textNode.$$nodes.push(node);
+        }
+        range.deleteContents();
+        range.insertNode(nodes);
+      } else {
+        // update nodes
+        for (i=0; i<mergedValues.length; i++) {
+          node = textNode.$$nodes[i];
+          updateNode(node, mergedValues[i], layout[i]);
+        }
+      }
+
+      function updateNode(node, value, type) {
+        if (type === DIR_CONTAINER) {
+          if (!node) {
+            node = document.createTextNode(value);
+          } else {
+            node.nodeValue = value;
+          }
+        } else {
+          if (!node) {
+            node = document.createElement('span');
+          }
+          node.textContent = value;
+          setDirOnElement(node, embedDir);
+        }
+        return node;
+      }
+    };
+
+    this.updateElementDir = function(element, value, isHtml) {
+      var dir = $bidi.estimateDirection(value, isHtml);
+      if (dir !== $bidi.Dir.NEUTRAL && dir !== self.getDir()) {
+        setDirOnElement(element, dir);
+      }
+    };
+
+    this.getDir = function() {
+      if (!self._dir) {
+        if (parentDirCtrl) {
+          return parentDirCtrl.getDir();
+        } else {
+          return $bidi.Dir.LTR;
+        }
+      }
+      return self._dir;
+    };
+
+    init();
+
+    function init() {
+      if (attrs.dir === 'locale') {
+        setDirOnElement($element[0], $bidi.localeDir());
+      } else {
+        attrs.$observe('dir', function(newDir) {
+          // TODO: put this into a hash!
+          if (newDir === 'ltr') {
+            self._dir = $bidi.Dir.LTR;
+          } else if (newDir === 'rtl') {
+            self._dir = $bidi.Dir.RTL;
+          } else {
+            self._dir = $bidi.Dir.NEUTRAL;
+          }
+        });
+      }
+    }
+
+    function setDirOnElement(element, dir) {
+      var htmlDir = '';
+      if (dir === $bidi.Dir.LTR) {
+        htmlDir = 'ltr';
+      } else if (dir === $bidi.Dir.RTL) {
+        htmlDir = 'rtl';
+      }
+      element.dir = htmlDir;
+    }
+
+    function mergeValuesAndSeparators(containerDir, values, separators) {
+      var resultValues = [];
+      var layoutArr = [];
+      for (var i=0; i<values.length; i++) {
+        addValueWithDir(separators[i], false);
+        addValueWithDir(values[i], true);
+      }
+      addValueWithDir(separators[i], false);
+      return {
+        values: resultValues,
+        layout: layoutArr.join('')
+      };
+
+      function addValueWithDir(value, isExpression) {
+        if (!value) {
+          return;
+        }
+        var dir;
+        if (!isExpression) {
+          dir = containerDir;
+        } else {
+          dir = $bidi.estimateDirection(value, false);
+        }
+        var layout = dir === containerDir ? DIR_CONTAINER: DIR_EMBED;
+        var lastLayout = layoutArr[layoutArr.length-1];
+        if (lastLayout) {
+          if (layout === lastLayout) {
+            resultValues[resultValues.length-1] += value;
+            return;
+          } else if (layout === DIR_CONTAINER) {
+            // insert correcting unicode character to prevent spillover
+            value = getUnicodeEmbeddingChar(containerDir) + value;
+          }
+        }
+        resultValues.push(value);
+        layoutArr.push(layout);
+      }
+    }
+
+    function getUnicodeEmbeddingChar(dir) {
+      if (dir === $bidi.Dir.RTL) {
+        return $bidi.Format.RLE;
+      }
+      return $bidi.Format.LRE;
+    }
+  }
+
+}];
 
 /* global -nullFormCtrl */
 var nullFormCtrl = {
@@ -17777,7 +17953,7 @@ function addNativeHtml5Validators(ctrl, validatorName, element) {
   }
 }
 
-function textInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger) {
+function textInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   var validity = element.prop('validity');
   var placeholder = element[0].placeholder, noevent = {};
 
@@ -17824,15 +18000,9 @@ function textInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextCh
         // even when the first character entered causes an error.
         (validity && value === '' && !validity.valueMissing)) {
       if (scope.$$phase) {
-        if (dirTextChanger) {
-          dirTextChanger(value);
-        }
         ctrl.$setViewValue(value, event);
       } else {
         scope.$apply(function() {
-          if (dirTextChanger) {
-            dirTextChanger(value);
-          }
           ctrl.$setViewValue(value, event);
         });
       }
@@ -17885,11 +18055,7 @@ function textInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextCh
   }
 
   ctrl.$render = function() {
-    var value = ctrl.$isEmpty(ctrl.$viewValue) ? '' : ctrl.$viewValue;
-    if (dirTextChanger) {
-      dirTextChanger(value);
-    }
-    element.val(value);
+    element.val(ctrl.$isEmpty(ctrl.$viewValue) ? '' : ctrl.$viewValue);
   };
 
   // pattern validator
@@ -17998,8 +18164,8 @@ function createDateParser(regexp, mapping) {
 }
 
 function createDateInputType(type, regexp, parseDate, format) {
-   return function dynamicDateInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger, $filter) {
-      textInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger);
+   return function dynamicDateInputType(scope, element, attr, ctrl, $sniffer, $browser, $filter) {
+      textInputType(scope, element, attr, ctrl, $sniffer, $browser);
 
       ctrl.$parsers.push(function(value) {
          if(ctrl.$isEmpty(value)) {
@@ -18094,8 +18260,8 @@ function numberInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   });
 }
 
-function urlInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger) {
-  textInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger);
+function urlInputType(scope, element, attr, ctrl, $sniffer, $browser) {
+  textInputType(scope, element, attr, ctrl, $sniffer, $browser);
 
   var urlValidator = function(value) {
     return validate(ctrl, 'url', ctrl.$isEmpty(value) || URL_REGEXP.test(value), value);
@@ -18105,8 +18271,8 @@ function urlInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextCha
   ctrl.$parsers.push(urlValidator);
 }
 
-function emailInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger) {
-  textInputType(scope, element, attr, ctrl, $sniffer, $browser, dirTextChanger);
+function emailInputType(scope, element, attr, ctrl, $sniffer, $browser) {
+  textInputType(scope, element, attr, ctrl, $sniffer, $browser);
 
   var emailValidator = function(value) {
     return validate(ctrl, 'email', ctrl.$isEmpty(value) || EMAIL_REGEXP.test(value), value);
@@ -18331,20 +18497,11 @@ function checkboxInputType(scope, element, attr, ctrl) {
 var inputDirective = ['$browser', '$sniffer', '$filter', function($browser, $sniffer, $filter) {
   return {
     restrict: 'E',
-    require: ['?ngModel','?^ngDir'],
+    require: ['?ngModel'],
     link: function(scope, element, attr, ctrls) {
-      var ngModelCtrl = ctrls[0],
-        dirCtrl = ctrls[1],
-        dirTextChanger = dirCtrl ? dirCtrl.createTextChanger(scope, '') : null;
-
-      if (ngModelCtrl) {
-        (inputType[lowercase(attr.type)] || inputType.text)(scope, element, attr, ngModelCtrl, $sniffer,
-          $browser, dirTextChanger, $filter);
-      }
-      if (dirTextChanger) {
-        attr.$observe('value', function(value) {
-          dirTextChanger(value);
-        });
+      if (ctrls[0]) {
+        (inputType[lowercase(attr.type)] || inputType.text)(scope, element, attr, ctrls[0], $sniffer,
+                                                            $browser, $filter);
       }
     }
   };
@@ -19353,13 +19510,12 @@ var ngModelOptionsDirective = function() {
    </example>
  */
 var ngBindDirective = valueFn({
-  require: '?^ngDir',
+  require: '?^dir',
   link: function(scope, element, attr, dirCtrl) {
     element.addClass('ng-binding').data('$binding', attr.ngBind);
-    var textChanger = dirCtrl ? dirCtrl.createTextChanger(scope, element.text(), false) : null;
     scope.$watch(attr.ngBind, function ngBindWatchAction(value) {
-      if (textChanger) {
-        textChanger(value);
+      if (dirCtrl) {
+        dirCtrl.updateElementDir(element[0], value, false);
       }
       // We are purposefully using == here rather than === because we want to
       // catch when value is "null or undefined"
@@ -19423,18 +19579,22 @@ var ngBindDirective = valueFn({
  */
 var ngBindTemplateDirective = ['$interpolate', function($interpolate) {
   return {
-    require: '?^ngDir',
+    require: '?^dir',
     link: function(scope, element, attr, dirCtrl) {
       // TODO: move this to scenario runner
       var interpolateFn = $interpolate(element.attr(attr.$attr.ngBindTemplate));
       element.addClass('ng-binding').data('$binding', interpolateFn);
-      var textChanger = dirCtrl ? dirCtrl.createTextChanger(scope, element.text(), false) : null;
-      attr.$observe('ngBindTemplate', function(value) {
-        if (textChanger) {
-          textChanger(value);
-        }
-        element.text(value);
-      });
+      if (dirCtrl) {
+        element.html(' ');
+        var textNode = element[0].childNodes[0];
+        scope.$watchGroup(interpolateFn.expressions, function(values) {
+          dirCtrl.interpolateTextNode(textNode, values, interpolateFn.separators);
+        });
+      } else {
+        attr.$observe('ngBindTemplate', function(value) {
+          element.text(value);
+        });
+      }
     }
   };
 }];
@@ -19488,18 +19648,17 @@ var ngBindTemplateDirective = ['$interpolate', function($interpolate) {
  */
 var ngBindHtmlDirective = ['$sce', '$parse', function($sce, $parse) {
   return {
-    require: '?^ngDir',
+    require: '?^dir',
     link: function(scope, element, attr, dirCtrl) {
       element.addClass('ng-binding').data('$binding', attr.ngBindHtml);
 
       var parsed = $parse(attr.ngBindHtml);
       function getStringValue() { return (parsed(scope) || '').toString(); }
 
-      var textChanger = dirCtrl ? dirCtrl.createTextChanger(scope, element.text(), true) : null;
       scope.$watch(getStringValue, function ngBindHtmlWatchAction(value) {
         var html = $sce.getTrustedHtml(parsed(scope)) || '';
-        if (textChanger) {
-          textChanger(html);
+        if (dirCtrl) {
+          dirCtrl.updateElementDir(element[0], html, true);
         }
 
         element.html(html);
@@ -20170,141 +20329,6 @@ var ngControllerDirective = [function() {
 // ngCsp is not implemented as a proper directive any more, because we need it be processed while we bootstrap
 // the system (before $parse is instantiated), for this reason we just have a csp() fn that looks for ng-csp attribute
 // anywhere in the current doc
-
-/**
- * @ngdoc directive
- * @name ngDir
- * @requires $bidi
- * @restrict A
- *
- * @description
- * This directive implements a polyfill for `dir="auto"` based
- * on the
- * [bidi support of the Google Closure Library](https://closure-library.googlecode.com/git/closure/goog/i18n/bidi.js).
- *
- * The polyfill is needed as not all browsers support the html5 standard
- * (see [W3C dir=auto tests](http://www.w3.org/International/tests/html5/the-dir-attribute/results-dir-auto))
- * and the html5 standard only looks for the first character with a strong directionality to the determine the
- * directionality of the whole element (see
- * [HTML5 dir attribute](http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html#the-dir-attribute)).
- *
- * How it works:
- *
- * The `dir` property of an element will be calculated based on the text contained in the element
- * and the value of `input` and `textarea` elements. For dynamically changing text,
- * the following directives are already integrated with the calculation of the `dir` attribute:
- * Text interpolation (`{{}}`), {@link ng.directive:ngBind ngBind}, {@link ng.directive:ngBindHtml ngBindHtml},
- * {@link ngBindTemplate ngBindTemplate}, {@link ngModel ngModel},
- * `<input value="{{...}}">` and `<textarea value="{{...}}">`.
- * Custom directives can participate in the calculation of the `dir` attribute via the
- * {@link ngDir.NgDirController NgDirController}.
- *
- * Besides the `ng-dir="auto"` polyfill, this directive also supports the special value `ng-dir="locale"` to apply the
- * directionality of the current locale to the `dir` attribute.
- *
- * Restrictions of the polyfill:
- *
- * * If `dir=""` this will not check parent elements for a `dir` attribute
- * * Inside of a `dir="auto"` element there can be no directives that do transcludes (e.g. `ng-repeat`)
- *   or compile and link children manually (e.g. `ng-view`). This is because those directives could add
- *   new static text that the `dir` directive would not know about.
- * @example
-   Try it: enter some RTL characters &#x05d0 and see how the direction of the input changes
-
-   <example>
-     <file name="index.html">
-      A sample RTL character: &#x05d0;
-      <input ng-dir="auto" type="text" ng-model="text">
-     </file>
-   </example>
- */
-var ngDirDirective = ['$bidi', function($bidi) {
-  var dirAutoMinErr = minErr('dirNgAuto');
-
-  return {
-    restrict: 'A',
-    controller: ['$scope', '$element', '$attrs', NgDirController]
-  };
-
-  /**
-   * @ngdoc type
-   * @name ngDir.NgDirController
-   *
-   * @description
-   * `DirController` provides the API for the `dir` directive. The controller contains
-   * methods for controlling the direction of bidirectional text.
-   */
-  function NgDirController($scope, $element, attrs) {
-    var self = this;
-    var directionStatusAuto = null;
-    var isAuto = false;
-
-    /**
-     * @ngdoc method
-     * @name ngDir.NgDirController#createTextChanger
-     * @function
-     * @description
-     * Creates a function that tells the DirController that some child text
-     * changed and that it should update the dir property if needed.
-     *
-     * @param {scope} scope the scope of the calling directive
-     * @param {string} initialValue initial text value in the DOM
-     * @param {boolean=} isHtml whether the value is html or normal text
-     * @return function(value) a function to be called whenever the text changes
-     */
-    this.createTextChanger = function(scope, initialValue, isHtml) {
-      if (!isAuto) {
-        return null;
-      }
-      if (scope !== $scope) {
-        throw dirAutoMinErr('childscope', 'Polyfill ng-dir="auto" does not support child scopes.');
-      }
-      var oldValue = initialValue;
-      return function(newValue) {
-        if (oldValue === newValue) {
-          return;
-        }
-        var oldDir = directionStatusAuto.get();
-        directionStatusAuto.remove(oldValue, isHtml).add(newValue, isHtml);
-        var newDir = directionStatusAuto.get();
-        if (oldDir !== newDir) {
-          setDirOnElement(newDir);
-        }
-        oldValue = newValue;
-      };
-    };
-
-    init();
-
-    function init() {
-      if (attrs.ngDir === 'auto') {
-        isAuto = true;
-        directionStatusAuto = $bidi.estimateDirectionIncremental();
-        // Need to initialize the status with the fixed text
-        // as Angular does not create directives for fixed text.
-        directionStatusAuto.add($element.text(), false);
-        setDirOnElement(directionStatusAuto.get());
-      } else if (attrs.ngDir === 'locale') {
-        setDirOnElement($bidi.localeDir());
-      } else {
-        attrs.$observe('ngDir', function(newValue) {
-          $element.prop('dir', newValue);
-        });
-      }
-    }
-
-    function setDirOnElement(dir) {
-      var htmlDir = '';
-      if (dir === $bidi.Dir.LTR) {
-        htmlDir = 'ltr';
-      } else if (dir === $bidi.Dir.RTL) {
-        htmlDir = 'rtl';
-      }
-      $element.prop('dir', htmlDir);
-    }
-  }
-
-}];
 
 /**
  * @ngdoc directive
