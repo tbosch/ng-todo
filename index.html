@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html ng-app="todoApp" ng-controller="AppCtrl">
-
+<!-- Set the default direction to be the direction of $locale.
+     Also enables bidirectionality handling children -->
+<html ng-app="todoApp" ng-controller="AppCtrl" dir="locale">
 <head>
   <meta charset="utf-8">
   <title>Todo List for {{userName}}</title>
