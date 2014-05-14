@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-<!-- Set the default direction to be the direction of $locale.
-     Also enable attribute escaping for content in children -->
-<html ng-app="todoApp" ng-controller="AppCtrl" ng-dir="locale">
+<html ng-app="todoApp" ng-controller="AppCtrl">
 
 <head>
   <meta charset="utf-8">
-  <title>Todo List for {{userName | bidi}}</title>
+  <title>Todo List for {{userName}}</title>
   <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
   <link rel="stylesheet" href="todo.css">
   <script src="libs/angular.js"></script>
@@ -15,7 +13,7 @@
 
 <body class="well">
 
-<h1><span avatar user-name="userName"></span> Todo List for <span ng-dir="auto">{{userName}}</span></h1>
+<h1><span avatar user-name="userName"></span> Todo List for {{userName}}</h1>
 
 <p>
   Remaining <strong>{{remaining()}}</strong> of <strong>{{items.length}}</strong>.
@@ -25,7 +23,7 @@
 <ul class="unstyled">
   <li ng-repeat="item in items">
     <input type="checkbox" ng-model="item.done">
-    <span ng-dir="auto">{{item.text}}</span>
+    {{item.text}}
     <avatar user-name="item.minion"></avatar>
   </li>
 </ul>
@@ -34,11 +32,10 @@
   <input name="newItemText"
          ng-model="newItem.text"
          required
-         ng-maxlength="15"
-         ng-dir="auto">
+         ng-maxlength="15">
   <div ng-show="newItemForm.newItemText.$error.maxlength">Text too long!</div>
   <select ng-model="newItem.minion" required>
-    <option ng-repeat="user in users" ng-dir="auto">{{user.name}}</option>
+    <option ng-repeat="user in users">{{user.name}}</option>
   </select>
   <button class="btn btn-primary"
           ng-click="add(newItem)"
